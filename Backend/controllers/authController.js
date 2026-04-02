@@ -1,11 +1,5 @@
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-
-// Temporary users database (replace with MongoDB User model later)
-const users = [
-  { id: 1, email: 'customer@test.com', name: 'John', password: bcrypt.hashSync('123456', 10), role: 'customer' },
-  { id: 2, email: 'chef@test.com', name: 'Chef', password: bcrypt.hashSync('123456', 10), role: 'chef' },
-];
+const User = require('../models/User');
 
 const login = async (req, res) => {
   try {
@@ -15,14 +9,14 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Find user by email
-    const user = users.find(u => u.email === email);
+    // Find user by email in MongoDB
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Compare password
-    const isMatch = bcrypt.compareSync(password, user.password);
+    // Compare password using the schema method
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -30,7 +24,8 @@ const login = async (req, res) => {
     // Create token
     const token = jwt.sign(
       {
-        id: user.id,
+        id: user._id,
+        email: user.email,
         role: user.role
       },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -41,7 +36,7 @@ const login = async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
         name: user.name,
         role: user.role
@@ -52,7 +47,45 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = {
-  login
+const seedUsers = async (req, res) => {
+  try {
+    // Check if users already exist
+    const existingUsers = await User.countDocuments();
+    if (existingUsers > 0) {
+      return res.status(400).json({ message: 'Users already exist in the database' });
+    }
+
+    // Create initial users
+    const newUsers = await User.insertMany([
+      {
+        name: 'John Customer',
+        email: 'customer@test.com',
+        password: '123456',
+        role: 'customer'
+      },
+      {
+        name: 'Chef Cook',
+        email: 'chef@test.com',
+        password: '123456',
+        role: 'chef'
+      },
+      {
+        name: 'Admin User',
+        email: 'admin@test.com',
+        password: '123456',
+        role: 'admin'
+      }
+    ]);
+
+    res.json({ message: 'Users seeded successfully', users: newUsers });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
+
+module.exports = {
+  login,
+  seedUsers
+};
+
 
