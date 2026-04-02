@@ -20,8 +20,13 @@ const updateOrderStatus = async (id, status) => {
     return await Order.findByIdAndUpdate(id, { status }, { new: true });
 };
 
+const deleteOrder = async (id) => {
+    return await Order.findByIdAndDelete(id);
+};
+
 module.exports = {
     createOrder,
     getOrders,
-    updateOrderStatus
+    updateOrderStatus,
+    deleteOrder
 };
