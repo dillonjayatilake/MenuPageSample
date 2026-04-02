@@ -27,17 +27,24 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Hash password before saving
+// Hash password and ensure email is lowercase before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  
   try {
+    // Ensure email is lowercase
+    if (this.email) {
+      this.email = this.email.toLowerCase();
+    }
+
+    // Only hash password if it's modified or new
+    if (!this.isModified('password')) {
+      return next();
+    }
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
+    console.error('Pre-save error:', error);
     next(error);
   }
 });
