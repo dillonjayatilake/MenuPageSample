@@ -48,8 +48,23 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
+const deleteOrder = async (req, res) => {
+    try {
+        const userRole = req.headers['x-user-role'];
+     if(userRole !== 'customer') {
+            return res.status(403).json({ message: 'Only customers can delete orders' });
+     }
+        await orderService.deleteOrder(req.params.id);
+        res.json({ message: 'Order deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createOrder,
     getOrders,
     updateOrderStatus,
+    deleteOrder
+
 };
