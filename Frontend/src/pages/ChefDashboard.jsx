@@ -20,7 +20,7 @@ export default function ChefDashboard({ userRole = "customer" }) {
     if (!canEditServiceStatus) {
       return;
     }
-
+2
     await axios.put(
       `/orders/${id}`,
       { status },
