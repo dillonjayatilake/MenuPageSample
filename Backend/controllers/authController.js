@@ -70,43 +70,55 @@ const signup = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
+    try {
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered' });
+      }
+    } catch (dbError) {
+      console.error('Database error checking existing user:', dbError);
+      return res.status(500).json({ error: 'Database error: ' + dbError.message });
     }
 
     // Create new user
-    const newUser = new User({
-      name,
-      email,
-      password,
-      role
-    });
+    try {
+      const newUser = new User({
+        name,
+        email: email.toLowerCase(),
+        password,
+        role
+      });
 
-    await newUser.save();
+      console.log('Saving new user:', { name, email: newUser.email, role });
+      await newUser.save();
+      console.log('User saved successfully');
 
-    // Create token
-    const token = jwt.sign(
-      {
-        id: newUser._id,
-        email: newUser.email,
-        role: newUser.role
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1d' }
-    );
+      // Create token
+      const token = jwt.sign(
+        {
+          id: newUser._id,
+          email: newUser.email,
+          role: newUser.role
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '1d' }
+      );
 
-    // Send response
-    res.status(201).json({
-      token,
-      user: {
-        id: newUser._id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role
-      },
-      message: 'Account created successfully'
-    });
+      // Send response
+      res.status(201).json({
+        token,
+        user: {
+          id: newUser._id,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role
+        },
+        message: 'Account created successfully'
+      });
+    } catch (saveError) {
+      console.error('Error saving user:', saveError);
+      res.status(500).json({ error: 'Error creating user: ' + saveError.message });
+    }
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ error: error.message });
@@ -149,10 +161,28 @@ const seedUsers = async (req, res) => {
   }
 };
 
+const resetDatabase = async (req, res) => {
+  try {
+    // Drop the User collection and recreate it
+    await User.collection.dropIndex('email_1');
+    console.log('Email index dropped');
+    
+    // Clear all users
+    await User.deleteMany({});
+    console.log('All users deleted');
+    
+    res.json({ message: 'Database reset successfully' });
+  } catch (error) {
+    console.error('Reset error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   login,
   signup,
-  seedUsers
+  seedUsers,
+  resetDatabase
 };
 
 
