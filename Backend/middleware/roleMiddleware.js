@@ -6,3 +6,5 @@ const allowRoles = (...roles) => {
     next();
   };
 };
+
+module.exports = { allowRoles };

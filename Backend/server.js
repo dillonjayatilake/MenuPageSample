@@ -6,6 +6,7 @@ require('dotenv').config();
 //import routes
 const menuRoutes = require('./routes/menuRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 //import db connection
 const connectDB = require('./config/db');
@@ -21,6 +22,7 @@ app.use(cors());
 //use router files
 app.use( "/api/menu", menuRoutes );
 app.use( "/api/orders", orderRoutes );
+app.use( "/api", authRoutes );
 
 
 //connect to db

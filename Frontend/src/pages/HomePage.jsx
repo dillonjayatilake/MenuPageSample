@@ -2,12 +2,26 @@ import { useState } from "react";
 import MenuPage from "./MenuPage";
 import OrdersPage from "./OrdersPage";
 
-function HomePage() {
+function HomePage({ tableId, onChangeTable }) {
   const [view, setView] = useState("menu");
-  const tableId = "t1";
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#ccb06a' }}>
+      {/* Table ID Header */}
+      <div className="bg-stone-800 text-amber-50 px-4 py-2 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Table:</span>
+          <span className="font-bold text-lg">{tableId}</span>
+        </div>
+        {onChangeTable && (
+          <button
+            onClick={onChangeTable}
+            className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-xs font-semibold transition-all"
+          >
+            🔄 Change Table
+          </button>
+        )}
+      </div>
       {view === "menu" && (
         <div className="relative">
           {/* Floating Orders Button */}
