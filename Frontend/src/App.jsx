@@ -3,10 +3,11 @@ import LandingPage from "./pages/LandingPage";
 import QRScannerPage from "./pages/QRScannerPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import ChefDashboard from "./pages/ChefDashboard";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState("landing"); // landing, qr, home, login, chef
+  const [currentPage, setCurrentPage] = useState("landing"); // landing, qr, home, login, signup, chef
   const [tableId, setTableId] = useState(null);
   const [staffUser, setStaffUser] = useState(null);
 
@@ -31,6 +32,11 @@ function App() {
   };
 
   const handleLoginSuccess = (user) => {
+    setStaffUser(user);
+    setCurrentPage("chef");
+  };
+
+  const handleSignupSuccess = (user) => {
     setStaffUser(user);
     setCurrentPage("chef");
   };
@@ -60,6 +66,14 @@ function App() {
         <LoginPage
           onLoginSuccess={handleLoginSuccess}
           onBackClick={() => setCurrentPage("landing")}
+          onSignupClick={() => setCurrentPage("signup")}
+        />
+      )}
+
+      {currentPage === "signup" && (
+        <SignupPage
+          onSignupSuccess={handleSignupSuccess}
+          onBackClick={() => setCurrentPage("login")}
         />
       )}
 

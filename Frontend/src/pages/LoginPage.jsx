@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "../api/axios";
 
-export default function LoginPage({ onLoginSuccess, onBackClick }) {
+export default function LoginPage({ onLoginSuccess, onBackClick, onSignupClick }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -81,6 +81,15 @@ export default function LoginPage({ onLoginSuccess, onBackClick }) {
             {loading ? "Logging in..." : "Login"}
           </button>
 
+          {onSignupClick && (
+            <button
+              onClick={onSignupClick}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300"
+            >
+              Create New Account
+            </button>
+          )}
+
           {onBackClick && (
             <button
               onClick={onBackClick}
@@ -92,7 +101,7 @@ export default function LoginPage({ onLoginSuccess, onBackClick }) {
         </div>
 
         <div className="mt-6 p-3 bg-stone-100 rounded-lg text-xs text-stone-600">
-          <p className="font-semibold mb-2">Demo Credentials:</p>
+          <p className="font-semibold mb-2">📝 Demo Credentials:</p>
           <p>Chef: <span className="font-mono">chef@test.com</span> / <span className="font-mono">123456</span></p>
           <p>Admin: <span className="font-mono">admin@test.com</span> / <span className="font-mono">123456</span></p>
         </div>

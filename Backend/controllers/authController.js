@@ -47,6 +47,72 @@ const login = async (req, res) => {
   }
 };
 
+const signup = async (req, res) => {
+  try {
+    const { name, email, password, confirmPassword, role } = req.body;
+
+    // Validation
+    if (!name || !email || !password || !confirmPassword || !role) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    // Only allow chef and admin roles
+    if (!['chef', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Only chef and admin can register' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    // Create new user
+    const newUser = new User({
+      name,
+      email,
+      password,
+      role
+    });
+
+    await newUser.save();
+
+    // Create token
+    const token = jwt.sign(
+      {
+        id: newUser._id,
+        email: newUser.email,
+        role: newUser.role
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '1d' }
+    );
+
+    // Send response
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role
+      },
+      message: 'Account created successfully'
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const seedUsers = async (req, res) => {
   try {
     // Check if users already exist
@@ -85,6 +151,7 @@ const seedUsers = async (req, res) => {
 
 module.exports = {
   login,
+  signup,
   seedUsers
 };
 
