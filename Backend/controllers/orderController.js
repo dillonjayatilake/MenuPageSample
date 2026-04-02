@@ -34,9 +34,7 @@ const updateOrderStatus = async (req, res) => {
     try {
         const userRole = req.headers['x-user-role'];
 
-        if (userRole !== 'chef') {
-            return res.status(403).json({ message: 'Only chef can update order status' });
-        }
+       
 
         const updated = await orderService.updateOrderStatus(
             req.params.id,
@@ -66,5 +64,4 @@ module.exports = {
     getOrders,
     updateOrderStatus,
     deleteOrder
-
 };
