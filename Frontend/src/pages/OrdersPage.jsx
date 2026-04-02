@@ -12,7 +12,11 @@ export default function OrdersPage({ tableId }) {
   const deleteOrder = async (orderId) => {
     if(window.confirm(`Are you sure you want to delete this order? This action cannot be undone.`)) {
       try {
-        await axios.delete(`/orders/${orderId}`);
+        await axios.delete(`/orders/${orderId}`, {
+          headers: {
+            'x-user-role': 'customer' //Simulating customer role for deletion. In real app, this should come from auth context or similar.
+          }
+        });
         setOrders(orders.filter(order => order._id !== orderId));
         alert(`Order deleted successfully.`);
       } catch (error) {
