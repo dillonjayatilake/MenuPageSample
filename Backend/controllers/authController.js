@@ -116,7 +116,14 @@ const signup = async (req, res) => {
         message: 'Account created successfully'
       });
     } catch (saveError) {
-      console.error('Error saving user:', saveError);
+      console.error('Error saving user:', saveError.message);
+      console.error('Error details:', saveError);
+      
+      // Handle duplicate key error
+      if (saveError.code === 11000) {
+        return res.status(400).json({ error: 'Email already exists' });
+      }
+      
       res.status(500).json({ error: 'Error creating user: ' + saveError.message });
     }
   } catch (error) {
