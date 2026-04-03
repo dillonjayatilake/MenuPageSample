@@ -5,11 +5,34 @@ import { io } from "socket.io-client";
 export default function ChefDashboard({ userRole = "customer" }) {
   const [orders, setOrders] = useState([]);
   const [socket, setSocket] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState({});
   const canEditServiceStatus = userRole === "chef";
+
+  const DELETION_WINDOW = 15 * 60; // 15 minutes in seconds
 
   const fetchOrders = async () => {
     const res = await axios.get("/orders");
     setOrders(res.data);
+  };
+
+  // Calculate remaining deletion time for each order
+  const getTimeRemaining = (createdAt) => {
+    const now = new Date();
+    const orderTime = new Date(createdAt);
+    const elapsedSeconds = Math.floor((now - orderTime) / 1000);
+    const remaining = Math.max(0, DELETION_WINDOW - elapsedSeconds);
+    return remaining;
+  };
+
+  // Format seconds to MM:SS
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const canStartPreparing = (order) => {
+    return order.status === 'pending' && (timeRemaining[order._id] || 0) <= 0;
   };
 
   useEffect(() => {
@@ -55,6 +78,19 @@ export default function ChefDashboard({ userRole = "customer" }) {
       newSocket.disconnect();
     };
   }, []);
+
+  // Update countdown timer every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const newTimeRemaining = {};
+      orders.forEach(order => {
+        newTimeRemaining[order._id] = getTimeRemaining(order.createdAt);
+      });
+      setTimeRemaining(newTimeRemaining);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [orders]);
 
   const updateStatus = async (id, status) => {
     if (!canEditServiceStatus) {
@@ -165,13 +201,46 @@ export default function ChefDashboard({ userRole = "customer" }) {
                     </div>
                   </div>
 
+                  {/* Deletion Window Timer for Pending Orders */}
+                  {order.status === "pending" && (
+                    <div className="mt-4 space-y-3">
+                      {/* Warning Message */}
+                      <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 text-center">
+                        <p className="text-blue-700 text-sm font-semibold">
+                          <span>⏱️</span> Customer Deletion Window Active
+                        </p>
+                        <p className="text-blue-600 text-xs mt-1">
+                          Customer can delete this order within 15 minutes from placement
+                        </p>
+                      </div>
+
+                      {/* Timer Display */}
+                      <div className="flex items-center justify-center gap-2">
+                        <div className={`text-sm font-bold px-3 py-2 rounded-full ${
+                          (timeRemaining[order._id] || 0) > 300 ? 'bg-green-100 text-green-800' :
+                          (timeRemaining[order._id] || 0) > 60 ? 'bg-yellow-100 text-yellow-800' :
+                          (timeRemaining[order._id] || 0) > 0 ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Safe to prepare in: {formatTime(timeRemaining[order._id] || 0)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Buttons based on status */}
                   {canEditServiceStatus && order.status !== "served" && (
                     <div className="mt-4 flex gap-3">
                       {order.status === "pending" && (
                         <button
                           onClick={() => updateStatus(order._id, "preparing")}
-                          className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2 shadow-md"
+                          disabled={!canStartPreparing(order)}
+                          className={`flex-1 ${
+                            canStartPreparing(order)
+                              ? 'bg-amber-600 hover:bg-amber-700 cursor-pointer'
+                              : 'bg-gray-400 cursor-not-allowed opacity-60'
+                          } text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2 shadow-md`}
+                          title={canStartPreparing(order) ? "Start preparing" : "Wait for deletion window to expire"}
                         >
                           <span>👨‍🍳</span>
                           Start Preparing
