@@ -13,6 +13,10 @@ const createOrder = async (req, res) => {
             items,
             status: "pending" 
         });
+        
+        // Emit socket event for new order
+        const io = req.app.get('io');
+        io.emit('order:created', order);
        
         res.json(order);
     } catch (error) {
@@ -40,6 +44,11 @@ const updateOrderStatus = async (req, res) => {
             req.params.id,
             req.body.status
         );
+        
+        // Emit socket event for status update
+        const io = req.app.get('io');
+        io.emit('order:updated', updated);
+        
         res.json(updated);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -52,7 +61,12 @@ const deleteOrder = async (req, res) => {
      if(userRole !== 'customer') {
             return res.status(403).json({ message: 'Only customers can delete orders' });
      }
-        await orderService.deleteOrder(req.params.id);
+        const deletedOrder = await orderService.deleteOrder(req.params.id);
+        
+        // Emit socket event for deleted order
+        const io = req.app.get('io');
+        io.emit('order:deleted', { _id: req.params.id });
+        
         res.json({ message: 'Order deleted' });
     } catch (error) {
         res.status(500).json({ error: error.message });
