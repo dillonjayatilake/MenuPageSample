@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
+import { io } from "socket.io-client";
 
 export default function OrdersPage({ tableId }) {
   const [orders, setOrders] = useState([]);
+  const [socket, setSocket] = useState(null);
 
   const fetchOrders = async () => {
     const res = await axios.get("/orders", { params: { tableId } });
@@ -38,9 +40,47 @@ export default function OrdersPage({ tableId }) {
   };
 
   useEffect(() => {
+    // Initialize socket connection
+    const newSocket = io("http://localhost:5000", {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
+    });
+
+    setSocket(newSocket);
+
+    // Fetch initial orders
     fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
+
+    // Listen for real-time order events
+    newSocket.on("order:created", (order) => {
+      if (order.tableId === tableId) {
+        setOrders(prevOrders => [order, ...prevOrders]);
+      }
+    });
+
+    newSocket.on("order:updated", (updatedOrder) => {
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order._id === updatedOrder._id ? updatedOrder : order
+        )
+      );
+    });
+
+    newSocket.on("order:deleted", (data) => {
+      setOrders(prevOrders =>
+        prevOrders.filter(order => order._id !== data._id)
+      );
+    });
+
+    // Fallback polling every 30 seconds
+    const interval = setInterval(fetchOrders, 30000);
+
+    return () => {
+      clearInterval(interval);
+      newSocket.disconnect();
+    };
   }, [tableId]);
 
  return (
