@@ -5,42 +5,13 @@ import { io } from "socket.io-client";
 export default function OrdersPage({ tableId }) {
   const [orders, setOrders] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [timeRemaining, setTimeRemaining] = useState({});
-
-  const DELETION_WINDOW = 15 * 60; // 15 minutes in seconds
 
   const fetchOrders = async () => {
     const res = await axios.get("/orders", { params: { tableId } });
     setOrders(res.data);
   };
 
-  // Calculate remaining deletion time for each order
-  const getTimeRemaining = (createdAt) => {
-    const now = new Date();
-    const orderTime = new Date(createdAt);
-    const elapsedSeconds = Math.floor((now - orderTime) / 1000);
-    const remaining = Math.max(0, DELETION_WINDOW - elapsedSeconds);
-    return remaining;
-  };
-
-  // Format seconds to MM:SS
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const canDeleteOrder = (order) => {
-    return order.status === 'pending' && (timeRemaining[order._id] || 0) > 0;
-  };
-
   const deleteOrder = async (orderId) => {
-    const remaining = timeRemaining[orderId];
-    if (remaining <= 0) {
-      alert('Cannot delete order. 15-minute deletion window has expired.');
-      return;
-    }
-
     if(window.confirm(`Are you sure you want to delete this order? This action cannot be undone.`)) {
       try {
         await axios.delete(`/orders/${orderId}`, {
@@ -112,19 +83,6 @@ export default function OrdersPage({ tableId }) {
     };
   }, [tableId]);
 
-  // Update countdown timer every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const newTimeRemaining = {};
-      orders.forEach(order => {
-        newTimeRemaining[order._id] = getTimeRemaining(order.createdAt);
-      });
-      setTimeRemaining(newTimeRemaining);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [orders]);
-
  return (
   <div className="min-h-screen p-6" style={{ backgroundColor: '#ccb06a' }}>
     <div className="max-w-3xl mx-auto">
@@ -190,34 +148,17 @@ export default function OrdersPage({ tableId }) {
                   </span>
                 </div>
 
-                {/* Delete Button with Timer */}
+                {/* Delete Button */}
                 <div className="ml-2 flex items-center gap-2">
                   {order.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => deleteOrder(order._id)}
-                        disabled={!canDeleteOrder(order)}
-                        className={`${
-                          canDeleteOrder(order)
-                            ? 'bg-red-600 hover:bg-red-700 cursor-pointer opacity-100'
-                            : 'bg-gray-400 cursor-not-allowed opacity-60'
-                        } text-white px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-1`}
-                        title={canDeleteOrder(order) ? "Delete Order" : "Deletion window expired"}
-                      >
-                        <span>🗑️</span>
-                        <span className="hidden sm:inline">Delete</span>
-                      </button>
-                      
-                      {/* Timer Display */}
-                      <div className={`text-xs font-bold px-2 py-1 rounded-full ${
-                        (timeRemaining[order._id] || 0) > 300 ? 'bg-green-100 text-green-800' :
-                        (timeRemaining[order._id] || 0) > 60 ? 'bg-yellow-100 text-yellow-800' :
-                        (timeRemaining[order._id] || 0) > 0 ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        ⏱️ {formatTime(timeRemaining[order._id] || 0)}
-                      </div>
-                    </>
+                    <button
+                      onClick={() => deleteOrder(order._id)}
+                      className="bg-red-600 hover:bg-red-700 cursor-pointer opacity-100 text-white px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-1"
+                      title="Delete Order"
+                    >
+                      <span>🗑️</span>
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -278,17 +219,7 @@ export default function OrdersPage({ tableId }) {
                 </button>
               )}
 
-              {/* Deletion Window Expired Message */}
-              {order.status === 'pending' && (timeRemaining[order._id] || 0) <= 0 && (
-                <div className="mt-4 bg-red-50 border border-red-300 rounded-lg p-3 text-center">
-                  <p className="text-red-700 text-sm font-semibold">
-                    <span>🚫</span> Deletion window has expired
-                  </p>
-                  <p className="text-red-600 text-xs mt-1">
-                    Order is now being prepared by the chef. Contact us for cancellation.
-                  </p>
-                </div>
-              )}
+
 
               {/* Progress Indicator for Preparing orders */}
               {order.status === 'Preparing' && (
