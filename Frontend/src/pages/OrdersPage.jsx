@@ -151,7 +151,7 @@ export default function OrdersPage({ tableId }) {
                 {/* Delete Button */}
                 <div className="ml-2 flex items-center gap-2">
                   {order.status === 'pending' && (
-                    <button
+                     <button
                       onClick={() => deleteOrder(order._id)}
                       className="bg-red-600 hover:bg-red-700 cursor-pointer opacity-100 text-white px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-1"
                       title="Delete Order"
